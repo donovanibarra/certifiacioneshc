@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Celsius Hornos HT · Certificaciones</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#B23A1C">
+<link rel="apple-touch-icon" href="icono-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="robots" content="noindex, nofollow">
+<style>
+:root{
+  --tinta:#14161A; --papel:#EFEEE9; --hoja:#FFFFFF; --linea:#D9D8D1;
+  --tenue:#75786F; --brasa:#B23A1C; --frio:#2B6C86; --ok:#2C6448;
+  --mono: ui-monospace, "SF Mono", "Roboto Mono", Menlo, Consolas, monospace;
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+*{box-sizing:border-box;}
+body{margin:0;background:var(--papel);color:var(--tinta);font-family:var(--sans);}
+#px-candado{max-width:420px;margin:0 auto;padding:12vh 18px 40px;}
+.px-tarjeta{background:var(--hoja);border:1px solid var(--linea);border-radius:6px;padding:30px 24px 32px;}
+.px-marca{font-family:var(--mono);font-size:11.5px;letter-spacing:.24em;text-transform:uppercase;color:var(--brasa);margin:0 0 12px;text-align:center;}
+.px-tarjeta h1{font-family:var(--serif);text-align:center;font-size:22px;font-weight:600;margin:0;line-height:1.25;}
+.px-sub{text-align:center;font-size:13px;color:var(--tenue);margin:8px 0 0;}
+.px-regla{border:none;border-top:2px solid var(--tinta);margin:18px 0 20px;}
+.px-campo{display:flex;flex-direction:column;gap:6px;margin-bottom:14px;}
+.px-campo label{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--tenue);}
+#px-codigo{
+  font-family:var(--mono);font-size:18px;letter-spacing:.06em;text-transform:uppercase;
+  border:1px solid var(--linea);border-radius:8px;background:#FCFCFA;padding:12px;width:100%;text-align:center;
+}
+#px-codigo:focus{outline:2px solid var(--frio);outline-offset:1px;border-color:transparent;}
+.px-btn{
+  font-size:15px;font-weight:600;border:1px solid var(--tinta);background:var(--tinta);color:#fff;
+  border-radius:9px;padding:12px 16px;cursor:pointer;width:100%;
+}
+.px-btn:hover{background:#000;}
+.px-btn[disabled]{opacity:.55;cursor:wait;}
+#px-msg{font-family:var(--mono);font-size:12.5px;line-height:1.5;margin:12px 0 0;min-height:18px;text-align:center;color:var(--tenue);}
+#px-msg.px-err{color:var(--brasa);}
+#px-msg.px-ok{color:var(--ok);}
+.px-pie{text-align:center;font-size:12px;color:var(--tenue);margin-top:16px;line-height:1.5;}
+#px-app{display:none;}
+#px-barraSesion{
+  display:flex;align-items:center;gap:10px;max-width:640px;margin:0 auto;padding:10px 14px 0;
+  font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:var(--tenue);
+}
+#px-barraSesion .px-sp{flex:1;}
+#px-salir{border:1px solid var(--linea);background:transparent;color:var(--tenue);border-radius:6px;padding:4px 10px;font-family:var(--mono);font-size:11px;cursor:pointer;}
+#px-salir:hover{border-color:var(--brasa);color:var(--brasa);}
+#px-instalar{display:none;border:1px solid var(--tinta);background:var(--tinta);color:#fff;border-radius:6px;padding:4px 10px;font-family:var(--mono);font-size:11px;cursor:pointer;}
+#px-avisoIos{display:none;max-width:640px;margin:8px auto 0;padding:0 14px;font-size:12px;color:var(--tenue);}
+</style>
+</head>
+<body>
+
+<div id="px-candado">
+  <div class="px-tarjeta">
+    <p class="px-marca">Celsius Hornos HT</p>
+    <h1>Certificaciones de tratamiento térmico</h1>
+    <p class="px-sub">Acceso para clientes</p>
+    <hr class="px-regla">
+    <div class="px-campo">
+      <label for="px-codigo">Código de acceso</label>
+      <input id="px-codigo" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="ESCRIBE TU CÓDIGO">
+    </div>
+    <button class="px-btn" id="px-entrar" type="button">Entrar</button>
+    <p id="px-msg"></p>
+  </div>
+  <p class="px-pie">Este dispositivo quedará recordado.<br>¿No tienes código? Contáctanos: www.hornoscelsius.com.mx · Tel. 81 1051 9441</p>
+</div>
+
+<div id="px-barraSesion" hidden>
+  <span id="px-etiqueta"></span>
+  <span class="px-sp"></span>
+  <button id="px-instalar" type="button">Instalar aplicación</button>
+  <button id="px-salir" type="button">Salir</button>
+</div>
+<p id="px-avisoIos">Para instalarla en iPhone o iPad: botón Compartir de Safari → «Agregar a pantalla de inicio».</p>
+<div id="px-app"></div>
+
+<script>
+(function(){
+  "use strict";
+  var cripto = (typeof window.__cripto !== "undefined") ? window.__cripto : window.crypto;
+  var LS = "celsius-acceso";
+  var accesosDoc = null;
+
+  function b64aBytes(b){ var s=atob(b), a=new Uint8Array(s.length); for(var i=0;i<s.length;i++) a[i]=s.charCodeAt(i); return a; }
+  function bytesAb64(a){ var s=""; for(var i=0;i<a.length;i++) s+=String.fromCharCode(a[i]); return btoa(s); }
+  function normalizar(c){ return String(c||"").toUpperCase().replace(/\s+/g,""); }
+
+  function msg(t, clase){ var m=document.getElementById("px-msg"); m.textContent=t||""; m.className=clase||""; }
+
+  function leerLS(){ try{ return JSON.parse(localStorage.getItem(LS)||"null"); }catch(e){ return null; } }
+  function guardarLS(o){ try{ localStorage.setItem(LS, JSON.stringify(o)); }catch(e){} }
+  function borrarLS(){ try{ localStorage.removeItem(LS); }catch(e){} }
+
+  async function derivar(codigo, saltB){
+    var enc = new TextEncoder();
+    var base = await cripto.subtle.importKey("raw", enc.encode(codigo), "PBKDF2", false, ["deriveKey"]);
+    return cripto.subtle.deriveKey(
+      { name:"PBKDF2", salt: saltB, iterations: 200000, hash: "SHA-256" },
+      base, { name:"AES-GCM", length:256 }, false, ["decrypt"]
+    );
+  }
+
+  async function abrirCon(Kraw, etiqueta){
+    var Kkey = await cripto.subtle.importKey("raw", Kraw, "AES-GCM", false, ["decrypt"]);
+    var claro = await cripto.subtle.decrypt(
+      { name:"AES-GCM", iv: b64aBytes(accesosDoc.payload.iv) }, Kkey, b64aBytes(accesosDoc.payload.datos)
+    );
+    var html = new TextDecoder().decode(claro);
+    inyectar(html);
+    document.getElementById("px-candado").style.display = "none";
+    document.getElementById("px-etiqueta").textContent = "Sesión: " + (etiqueta || "cliente");
+    document.getElementById("px-barraSesion").hidden = false;
+    document.getElementById("px-app").style.display = "block";
+    avisosDeInstalacion();
+  }
+
+  function inyectar(html){
+    var tmp = new DOMParser().parseFromString(html, "text/html");
+    tmp.querySelectorAll("style").forEach(function(st){
+      var s2 = document.createElement("style"); s2.textContent = st.textContent; document.head.appendChild(s2);
+    });
+    var scripts = [];
+    tmp.querySelectorAll("script").forEach(function(sc){ scripts.push(sc.textContent); sc.remove(); });
+    document.getElementById("px-app").innerHTML = tmp.body.innerHTML;
+    scripts.forEach(function(js){
+      var s3 = document.createElement("script"); s3.textContent = js; document.body.appendChild(s3);
+    });
+  }
+
+  async function intentarCodigo(codigo){
+    codigo = normalizar(codigo);
+    if(!codigo) return false;
+    for(var i=0;i<accesosDoc.accesos.length;i++){
+      var a = accesosDoc.accesos[i];
+      try{
+        var key = await derivar(codigo, b64aBytes(a.salt));
+        var Kraw = new Uint8Array(await cripto.subtle.decrypt({ name:"AES-GCM", iv: b64aBytes(a.iv) }, key, b64aBytes(a.k)));
+        guardarLS({ id: a.id, etiqueta: a.etiqueta, k: bytesAb64(Kraw) });
+        await abrirCon(Kraw, a.etiqueta);
+        return true;
+      }catch(e){}
+    }
+    return false;
+  }
+
+  async function cargarAccesos(){
+    var r = await fetch("accesos.json", { cache: "no-store" });
+    if(!r.ok) throw new Error("http " + r.status);
+    return r.json();
+  }
+
+  async function boot(){
+    if("serviceWorker" in navigator){
+      try{ navigator.serviceWorker.register("sw.js"); }catch(e){}
+    }
+    try{
+      accesosDoc = await cargarAccesos();
+    }catch(e){
+      msg("No pude cargar el acceso. La primera vez necesitas conexión a internet; después funciona sin ella.", "px-err");
+      return;
+    }
+    if(!accesosDoc || !accesosDoc.accesos || !accesosDoc.payload){
+      msg("El archivo de accesos del sitio está dañado. Avisa a Celsius Hornos HT.", "px-err");
+      return;
+    }
+    var guardado = leerLS();
+    if(guardado && guardado.id && guardado.k){
+      var sigue = accesosDoc.accesos.some(function(a){ return a.id === guardado.id; });
+      if(!sigue){
+        borrarLS();
+        msg("Tu acceso fue desactivado. Pide un código nuevo a Celsius Hornos HT.", "px-err");
+        return;
+      }
+      try{ await abrirCon(b64aBytes(guardado.k), guardado.etiqueta); return; }catch(e){ borrarLS(); }
+    }
+    var campo = document.getElementById("px-codigo");
+    if(campo) setTimeout(function(){ campo.focus(); }, 80);
+  }
+
+  async function entrar(){
+    var btn = document.getElementById("px-entrar");
+    btn.disabled = true;
+    msg("Verificando…");
+    var ok = false;
+    try{ ok = await intentarCodigo(document.getElementById("px-codigo").value); }
+    catch(e){ ok = false; }
+    btn.disabled = false;
+    if(!ok) msg("Código no válido. Revísalo o contacta a Celsius Hornos HT.", "px-err");
+  }
+
+  document.getElementById("px-entrar").addEventListener("click", entrar);
+  document.getElementById("px-codigo").addEventListener("keydown", function(e){ if(e.key === "Enter") entrar(); });
+
+  document.getElementById("px-salir").addEventListener("click", function(){
+    borrarLS();
+    location.reload();
+  });
+
+  var promptInstalar = null;
+  window.addEventListener("beforeinstallprompt", function(e){
+    e.preventDefault();
+    promptInstalar = e;
+    var b = document.getElementById("px-instalar");
+    b.style.display = "inline-block";
+  });
+  document.getElementById("px-instalar").addEventListener("click", function(){
+    if(promptInstalar){ promptInstalar.prompt(); promptInstalar = null; this.style.display = "none"; }
+  });
+  function avisosDeInstalacion(){
+    var esIos = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    var instalada = window.matchMedia && window.matchMedia("(display-mode: standalone)").matches;
+    if(esIos && !instalada) document.getElementById("px-avisoIos").style.display = "block";
+  }
+
+  boot();
+})();
+</script>
+</body>
+</html>
