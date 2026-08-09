@@ -7,6 +7,14 @@
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#B23A1C">
 <link rel="apple-touch-icon" href="icono-192.png">
+<link rel="icon" type="image/png" href="icono-192.png">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Celsius Hornos HT">
+<meta property="og:title" content="Celsius Hornos HT · Certificaciones">
+<meta property="og:description" content="Portal de certificación de tratamiento térmico NOM-144-SEMARNAT-2017 para clientes de Celsius Hornos HT.">
+<meta property="og:image" content="https://hornoscelsius.github.io/certificaciones/logo-og.png">
+<meta property="og:url" content="https://hornoscelsius.github.io/certificaciones/">
+<meta name="twitter:card" content="summary_large_image">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="robots" content="noindex, nofollow">
@@ -22,6 +30,7 @@
 body{margin:0;background:var(--papel);color:var(--tinta);font-family:var(--sans);}
 #px-candado{max-width:420px;margin:0 auto;padding:12vh 18px 40px;}
 .px-tarjeta{background:var(--hoja);border:1px solid var(--linea);border-radius:6px;padding:30px 24px 32px;}
+#px-logo{display:block;margin:0 auto 12px;width:130px;height:auto;}
 .px-marca{font-family:var(--mono);font-size:11.5px;letter-spacing:.24em;text-transform:uppercase;color:var(--brasa);margin:0 0 12px;text-align:center;}
 .px-tarjeta h1{font-family:var(--serif);text-align:center;font-size:22px;font-weight:600;margin:0;line-height:1.25;}
 .px-sub{text-align:center;font-size:13px;color:var(--tenue);margin:8px 0 0;}
@@ -59,6 +68,7 @@ body{margin:0;background:var(--papel);color:var(--tinta);font-family:var(--sans)
 
 <div id="px-candado">
   <div class="px-tarjeta">
+    <img id="px-logo" src="logo.png" alt="Celsius Hornos HT">
     <p class="px-marca">Celsius Hornos HT</p>
     <h1>Certificaciones de tratamiento térmico</h1>
     <p class="px-sub">Acceso para clientes</p>
@@ -153,7 +163,7 @@ body{margin:0;background:var(--papel);color:var(--tinta);font-family:var(--sans)
 
   async function cargarAccesos(){
     var r = await fetch("accesos.json", { cache: "no-store" });
-    if(!r.ok) throw new Error("http " + r.status);
+    if(!r.ok){ var err = new Error("http " + r.status); err.estado = r.status; throw err; }
     return r.json();
   }
 
@@ -164,7 +174,11 @@ body{margin:0;background:var(--papel);color:var(--tinta);font-family:var(--sans)
     try{
       accesosDoc = await cargarAccesos();
     }catch(e){
-      msg("No pude cargar el acceso. La primera vez necesitas conexión a internet; después funciona sin ella.", "px-err");
+      if(e && e.estado === 404){
+        msg("El sitio no encuentra el archivo accesos.json. Debe llamarse exactamente accesos.json (sin espacios ni «(1)») y estar junto a index.html.", "px-err");
+      } else {
+        msg("No pude cargar el acceso. La primera vez necesitas conexión a internet; después funciona sin ella.", "px-err");
+      }
       return;
     }
     if(!accesosDoc || !accesosDoc.accesos || !accesosDoc.payload){

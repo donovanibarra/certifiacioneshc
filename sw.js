@@ -1,6 +1,6 @@
 /* Celsius Hornos HT — funciona sin internet después de la primera visita */
-var CACHE = "celsius-v1";
-var BASE = ["./", "./index.html", "./manifest.json", "./accesos.json", "./icono-192.png", "./icono-512.png"];
+var CACHE = "celsius-v3";
+var BASE = ["./", "./index.html", "./manifest.json", "./accesos.json", "./icono-192.png", "./icono-512.png", "./logo.png", "./logo-og.png"];
 
 self.addEventListener("install", function(e){
   e.waitUntil(caches.open(CACHE).then(function(c){ return c.addAll(BASE); }).then(function(){ return self.skipWaiting(); }));
@@ -22,9 +22,12 @@ self.addEventListener("fetch", function(e){
   if(url.pathname.endsWith("/accesos.json") || url.pathname === "/accesos.json"){
     e.respondWith(
       fetch(e.request).then(function(r){
-        var copia = r.clone();
-        caches.open(CACHE).then(function(c){ c.put("./accesos.json", copia); });
-        return r;
+        if(r && r.ok){
+          var copia = r.clone();
+          caches.open(CACHE).then(function(c){ c.put("./accesos.json", copia); });
+          return r;
+        }
+        return caches.match("./accesos.json").then(function(enCache){ return enCache || r; });
       }).catch(function(){ return caches.match("./accesos.json"); })
     );
     return;
@@ -35,8 +38,10 @@ self.addEventListener("fetch", function(e){
     caches.match(e.request, { ignoreSearch: true }).then(function(enCache){
       if(enCache) return enCache;
       return fetch(e.request).then(function(r){
-        var copia = r.clone();
-        caches.open(CACHE).then(function(c){ c.put(e.request, copia); });
+        if(r && r.ok){
+          var copia = r.clone();
+          caches.open(CACHE).then(function(c){ c.put(e.request, copia); });
+        }
         return r;
       }).catch(function(){
         if(e.request.mode === "navigate") return caches.match("./index.html");
